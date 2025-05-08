@@ -1,6 +1,6 @@
 ---
 - name: Deploy Student Attenattendance App with Docker Compose v2
-  hosts: Servers
+  hosts: servers
   become: yes
 
   vars:
