@@ -2,7 +2,7 @@
 
 # ========= CONFIGURATION =========
 KEY_NAME="ansible-master-play" #public_key
-KEY_PATH="$HOME/.ssh/${KEY_NAME}.pem" #private_key
+KEY_PATH="$HOME/${KEY_NAME}.pem" #private_key
 SECURITY_GROUP="ansible-flask-sg"
 INSTANCE_NAME="flask-student-app"
 INSTANCE_TYPE="t2.micro"
@@ -11,6 +11,25 @@ AMI_ID="ami-07b0c09aab6e66ee9"
 ANSIBLE_USER="ubuntu"
 REPO_URL="https://github.com/bongodev/flask-student-attendance-app.git"
 APP_DIR="/var/www/flask-student-attendance-app"
+
+# Step01: Update & install prerequisites
+sudo apt update
+sudo apt install -y unzip curl
+
+# Step02: Install AWS CLI v2
+if ! command -v aws &> /dev/null; then
+  echo "Installing AWS CLI..."
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  sudo ./aws/install
+  export PATH=$PATH:/usr/local/bin
+else
+  echo "AWS CLI already installed"
+fi
+
+# Step03: AWS Configure
+echo "Configuring AWS CLI..."
+aws configure
 
 
 # ========= STEP 1: Create Key Pair if not exists =========
@@ -33,6 +52,11 @@ if [ -z "$SG_ID" ]; then
     --protocol tcp --port 22 --cidr 0.0.0.0/0
   aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
     --protocol tcp --port 80 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+    --protocol tcp --port 5000 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+    --protocol tcp --port 3306 --cidr 0.0.0.0/0
+
 else
   echo "[i] Security group already exists."
 fi
@@ -49,13 +73,22 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --query 'Instances[0].InstanceId' \
   --output text)
 
-echo "[i] Waiting for instance to be running..."
-aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+
+echo "Waiting for public IP to be available..."
+while [ -z "$PUBLIC_IP" ]; do
+  sleep 300
+  PUBLIC_IP=$(aws ec2 describe-instances \
+    --instance-ids "$INSTANCE_ID" \
+    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+    --output text)
+done
 
 
 # ========= STEP 4: Get Public IP =========
-IP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+SG_ID=$(aws ec2 describe-instances \
+  --instance-ids "$INSTANCE_ID" \
+  --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' \
+  --output text | tr -d '\t\r\n ')
 echo "[+] Instance IP: $IP"
 
 # ========= STEP 5: Wait for SSH =========
