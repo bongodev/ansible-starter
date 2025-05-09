@@ -89,7 +89,7 @@ SG_ID=$(aws ec2 describe-instances \
   --instance-ids "$INSTANCE_ID" \
   --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' \
   --output text | tr -d '\t\r\n ')
-echo "[+] Instance IP: $IP"
+echo "[+] Instance IP: $PUBLIC_IP"
 
 # ========= STEP 5: Wait for SSH =========
 echo "[i] Waiting for SSH to be ready..."
@@ -200,4 +200,4 @@ echo "[+] Running Ansible playbook..."
 ansible-playbook -i hosts.ini deploy_flask_app.yml
 
 echo "Deployment completed."
-echo "Your Flask app should be available at: $IP:5000"
+echo "Your Flask app should be available at: $PUBLIC_IP:5000"
