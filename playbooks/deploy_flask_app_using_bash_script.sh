@@ -106,7 +106,7 @@ sleep 25
 echo "[+] Writing Ansible inventory..."
 cat > hosts.ini <<EOF
 [Servers]
-$IP ansible_user=$ANSIBLE_USER ansible_ssh_private_key_file=$KEY_PATH ansible_python_interpreter=/usr/bin/python3
+$PUBLIC_IP ansible_user=$ANSIBLE_USER ansible_ssh_private_key_file=$KEY_PATH ansible_python_interpreter=/usr/bin/python3
 EOF
 
 # ========= STEP 8: Create Ansible Playbook =========
