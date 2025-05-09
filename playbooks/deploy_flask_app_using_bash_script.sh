@@ -76,7 +76,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
 
 echo "Waiting for public IP to be available..."
 while [ -z "$PUBLIC_IP" ]; do
-  sleep 300
+  sleep 90
   PUBLIC_IP=$(aws ec2 describe-instances \
     --instance-ids "$INSTANCE_ID" \
     --query 'Reservations[0].Instances[0].PublicIpAddress' \
